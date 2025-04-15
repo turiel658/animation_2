@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Artista Musical</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p>Analizando datos musicales...</p>
+    </div>
+
+    <header>
+        <h1>Análisis Musical Avanzado</h1>
+        <div class="search-container">
+            <input type="text" id="artist-search" placeholder="Buscar artista...">
+            <button id="search-btn"><i class="fas fa-search"></i></button>
+        </div>
+    </header>
+
+    <main>
+        <section class="artist-info">
+            <div class="artist-header">
+                <div class="image-container">
+                    <img id="artist-image" src="" alt="Imagen del Artista">
+                </div>
+                <div class="artist-details">
+                    <h2 id="artist-name">Nombre del Artista</h2>
+                    <p id="artist-genres"><i class="fas fa-music"></i> Géneros: Cargando...</p>
+                    <p id="artist-followers"><i class="fas fa-users"></i> Seguidores: Cargando...</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="analytics-container">
+            <div class="top-tracks card">
+                <h2><i class="fas fa-chart-line"></i> Top Canciones</h2>
+                <ul id="top-tracks-list" class="track-list"></ul>
+            </div>
+
+            <div class="audio-analysis card">
+                <h2><i class="fas fa-waveform"></i> Características de Audio</h2>
+                <div class="chart-container">
+                    <canvas id="audio-features-chart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="error-message" id="error-container"></div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
