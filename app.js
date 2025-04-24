@@ -1,8 +1,8 @@
 import anime from 'animejs';
 
 // Credenciales de la API de Spotify
-const CLIENT_ID = ' 517da3fdb59e481f918584c32517adde '; // Reemplaza con tu Client ID
-const CLIENT_SECRET = ' 0d9196a50e504c58b0218e04efe82f01 '; // Reemplaza con tu Client Secret
+const CLIENT_ID = '  '; // Reemplaza con tu Client ID
+const CLIENT_SECRET = '  '; // Reemplaza con tu Client Secret
 
 // Elementos del DOM
 const elements = {
