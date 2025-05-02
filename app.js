@@ -1,4 +1,7 @@
 
+const CLIENT_ID = "a9ee21a8115b4a17b9f7e118362a5eaf"; // Replace with your actual Client ID
+const CLIENT_SECRET = "c279c920a4274bd78213ea6455583072"; // Replace with your actual Client Secret
+
 // DOM Elements
 const elements = {
     artistName: document.getElementById('artist-name'), 
