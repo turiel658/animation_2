@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Music Analysis <img src="https://img.icons8.com/color/48/000000/spotify.png"/>
 
 Link: https://leoporma.github.io/Music_Analysis/
@@ -53,5 +53,5 @@ Link: https://leoporma.github.io/Music_Analysis/
 =======
 #Music Analysis
 
-Link: https://leoporma.github.io/Music_Analysis/
->>>>>>> 2798556abfeb4ce0b9c0eec160f2165d22456ef1
+
+
