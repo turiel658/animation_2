@@ -1,8 +1,6 @@
-// Import anime.js using script in HTML instead of ES6 import
-// Spotify API Credentials
-// IMPORTANT: These credentials need to be replaced with your own from Spotify Developer Dashboard
-const CLIENT_ID = 'a9ee21a8115b4a17b9f7e118362a5eaf'; // Replace with your Client ID 
-const CLIENT_SECRET = 'c279c920a4274bd78213ea6455583072'; // Replace with your Client Secret
+import dotenv from 'dotenv';
+dotenv.config();
+
 
 // DOM Elements
 const elements = {
