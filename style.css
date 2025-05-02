@@ -30,7 +30,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--secondary-color);
+    background: rgba(25, 20, 20, 0.8);
     display: none;
     justify-content: center;
     align-items: center;
@@ -61,6 +61,13 @@ header {
     text-align: center;
     padding: 2rem 1rem;
     background: rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .search-container {
@@ -72,17 +79,19 @@ header {
 
 #artist-search {
     flex: 1;
-    padding: 0.8rem;
+    padding: 0.8rem 1.2rem;
     border: 2px solid var(--primary-color);
     border-radius: 25px;
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
     font-size: 1rem;
+    transition: all 0.3s ease;
 }
 
 #artist-search:focus {
     outline: none;
     box-shadow: 0 0 10px var(--primary-color);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 #search-btn {
@@ -92,11 +101,18 @@ header {
     border-radius: 25px;
     color: white;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: all 0.3s ease;
+    font-weight: bold;
 }
 
 #search-btn:hover {
     transform: scale(1.05);
+    background: #1ed760;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+#search-btn:active {
+    transform: scale(0.95);
 }
 
 /* Artist Info */
@@ -110,6 +126,9 @@ header {
     align-items: center;
     gap: 2rem;
     margin-bottom: 2rem;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 @media (min-width: 768px) {
@@ -130,6 +149,7 @@ header {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     transform-style: preserve-3d;
+    object-fit: cover;
 }
 
 .artist-info img:hover {
@@ -142,8 +162,9 @@ header {
 }
 
 .artist-details h2 {
-    font-size: 2rem;
+    font-size: 2.5rem;
     margin-bottom: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .artist-details p {
@@ -177,6 +198,12 @@ header {
     border-radius: 15px;
     padding: 1.5rem;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .card h2 {
@@ -184,6 +211,11 @@ header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    color: var(--primary-color);
+}
+
+.card h2 i {
+    font-size: 1.2em;
 }
 
 /* Top Tracks */
@@ -199,16 +231,37 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: transform 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .track-list li:hover {
     transform: translateX(10px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.track-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: var(--primary-color);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.track-list li:hover::before {
+    transform: scaleY(1);
 }
 
 .track-number {
     color: var(--text-secondary);
-    margin-right: 0.5rem;
+    margin-right: 1rem;
+    font-weight: bold;
 }
 
 .track-popularity {
@@ -220,12 +273,17 @@ header {
 .track-duration {
     color: var(--text-secondary);
     font-size: 0.9rem;
+    min-width: 45px;
+    text-align: right;
 }
 
 /* Audio Analysis */
 .chart-container {
     position: relative;
     min-height: 300px;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
 }
 
 /* Error Messages */
@@ -240,11 +298,15 @@ header {
     border-radius: 5px;
     display: none;
     animation: slideDown 0.3s ease;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+    text-align: center;
 }
 
 @keyframes slideDown {
-    from { top: -50px; }
-    to { top: 1rem; }
+    from { top: -50px; opacity: 0; }
+    to { top: 1rem; opacity: 1; }
 }
 
 /* Responsive */
@@ -260,4 +322,31 @@ header {
     .analytics-container {
         grid-template-columns: 1fr;
     }
+    
+    .track-list li {
+        flex-wrap: wrap;
+    }
+    
+    .track-duration {
+        margin-left: auto;
+    }
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #1ed760;
 }
