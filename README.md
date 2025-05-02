@@ -40,18 +40,10 @@ Link: https://leoporma.github.io/Music_Analysis/
 -   Anime.js <img src="https://img.icons8.com/ios-glyphs/30/000000/loading.png"/>
 - Dotenv <img src="https://img.icons8.com/ios-glyphs/30/000000/settings.png"/>
 
-## Setup Instructions
-
-Link: https://leoporma.github.io/Music_Analysis/
-
-1.  **Clone the Repository:**
 
 
-<<<<<<< HEAD
 
-#Music Analysis
-=======
-#Music Analysis
+
 
 
 
