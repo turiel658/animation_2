@@ -1,8 +1,8 @@
 // Import anime.js using script in HTML instead of ES6 import
 
 // Spotify API Credentials
-// Note: Replace these with your own credentials
-const CLIENT_ID = 'a9ee21a8115b4a17b9f7e118362a5eaf'; // Replace with your Client ID
+// IMPORTANT: These credentials need to be replaced with your own from Spotify Developer Dashboard
+const CLIENT_ID = 'a9ee21a8115b4a17b9f7e118362a5eaf'; // Replace with your Client ID 
 const CLIENT_SECRET = 'c279c920a4274bd78213ea6455583072'; // Replace with your Client Secret
 
 // DOM Elements
@@ -18,6 +18,10 @@ const elements = {
     searchButton: document.getElementById('search-btn'),
     errorContainer: document.getElementById('error-container')
 };
+
+// Token storage
+let accessToken = '';
+let tokenExpiration = 0;
 
 // Show/hide loader
 function toggleLoader(show) {
@@ -38,10 +42,17 @@ function showError(message) {
     }, 5000);
 }
 
-// Obtener el token de acceso
+// Get access token with better token management
 async function getAccessToken() {
     try {
+        // Check if we already have a valid token
+        const now = Date.now();
+        if (accessToken && tokenExpiration > now) {
+            return accessToken;
+        }
+
         toggleLoader(true);
+        
         const response = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
             headers: {
@@ -51,38 +62,63 @@ async function getAccessToken() {
             body: 'grant_type=client_credentials',
         });
 
-        if (!response.ok) throw new Error('Error al obtener token de acceso');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Error al obtener token de acceso (${response.status}): ${
+                errorData.error_description || response.statusText
+            }`);
+        }
 
         const data = await response.json();
-        toggleLoader(false);
-        return data.access_token;
+        
+        if (!data.access_token) {
+            throw new Error('Token de acceso no recibido desde Spotify');
+        }
+        
+        // Store token and its expiration time
+        accessToken = data.access_token;
+        // Set expiration 60 seconds earlier to be safe
+        tokenExpiration = now + (data.expires_in - 60) * 1000;
+        
+        console.log("New token obtained: " + accessToken.substring(0, 10) + "...");
+        return accessToken;
     } catch (error) {
         showError(`Error de autenticación: ${error.message}`);
-        toggleLoader(false);
+        console.error("Authentication error:", error);
         return null;
+    } finally {
+        toggleLoader(false);
     }
 }
 
-
-// Buscar un artista por nombre
+// Search for an artist by name
 async function searchArtist(artistName) {
     try {
         toggleLoader(true);
         const token = await getAccessToken();
         if (!token) {
-            toggleLoader(false);
             return;
         }
 
         const response = await fetch(
             `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`,
-            { headers: { 'Authorization': `Bearer ${token}` } }
+            { 
+                headers: { 
+                    'Authorization': `Bearer ${token}` 
+                } 
+            }
         );
 
-        if (!response.ok) throw new Error('Error en la búsqueda');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Error en la búsqueda (${response.status}): ${
+                errorData.error?.message || response.statusText
+            }`);
+        }
+        
         const data = await response.json();
 
-        if (data.artists.items.length === 0) {
+        if (!data.artists || data.artists.items.length === 0) {
             throw new Error('No se encontró ningún artista con ese nombre');
         }
 
@@ -90,18 +126,18 @@ async function searchArtist(artistName) {
         await getArtistInfo(artistId);
     } catch (error) {
         showError(`Error: ${error.message}`);
+        console.error("Search error:", error);
     } finally {
-        
+        toggleLoader(false);
     }
 }
 
-// Obtener información básica del artista
+// Get basic artist information
 async function getArtistInfo(artistId) {
     try {
         toggleLoader(true);
         const token = await getAccessToken();
         if (!token) {
-            toggleLoader(false);
             return;
         }
 
@@ -109,31 +145,39 @@ async function getArtistInfo(artistId) {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (!response.ok) throw new Error('Artista no encontrado');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Artista no encontrado (${response.status}): ${
+                errorData.error?.message || response.statusText
+            }`);
+        }
+        
         const artistData = await response.json();
 
-         updateArtistInfo(artistData);
+        updateArtistInfo(artistData);
         if (artistData.images && artistData.images.length > 0) {
             changeBackgroundColor(artistData.images[0]?.url);
         }
         
-        // Obtener datos adicionales
+        // Get additional data
         const topTracks = await getTopTracks(artistId);
-        if (topTracks) {
+        if (topTracks && topTracks.length > 0) {
             displayTopTracks(topTracks);
-            const audioFeatures = await getAudioFeatures(topTracks.map(track => track.id));
-            if (audioFeatures && audioFeatures.length > 0) {
-                createAudioFeaturesChart(audioFeatures);
-            }
+            
+            // We'll use a different approach - instead of audio features, 
+            // we'll create a chart based on the popularity and other 
+            // data already available in the tracks
+            createAlternativeChart(topTracks);
         }
     } catch (error) {
         showError(`Error al cargar datos: ${error.message}`);
+        console.error("Artist info error:", error);
     } finally {
-       toggleLoader(false);
+        toggleLoader(false);
     }    
 }
 
-// Actualizar la información del artista en el DOM
+// Update artist information in the DOM
 function updateArtistInfo(artistData) {
     elements.artistName.textContent = artistData.name;
     
@@ -158,7 +202,7 @@ function updateArtistInfo(artistData) {
     }`;
 }
 
-// Obtener top tracks
+// Get top tracks
 async function getTopTracks(artistId) {
     try {
         const token = await getAccessToken();
@@ -169,16 +213,23 @@ async function getTopTracks(artistId) {
             { headers: { 'Authorization': `Bearer ${token}` } }
         );
 
-        if (!response.ok) throw new Error('Error al obtener tracks');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Error al obtener tracks (${response.status}): ${
+                errorData.error?.message || response.statusText
+            }`);
+        }
+        
         const data = await response.json();
-        return data.tracks.slice(0, 5); // Top 5 canciones
+        return data.tracks.slice(0, 5); // Top 5 songs
     } catch (error) {
         showError(`Error en tracks: ${error.message}`);
+        console.error("Top tracks error:", error);
         return null;
     }
 }
 
-// Mostrar top tracks
+// Display top tracks
 function displayTopTracks(tracks) {
     if (!tracks || tracks.length === 0) {
         elements.topTracksList.innerHTML = '<li>No hay canciones disponibles</li>';
@@ -196,52 +247,34 @@ function displayTopTracks(tracks) {
         ).join('');
 }
 
-// Obtener características de audio
-async function getAudioFeatures(trackIds) {
-    if (!trackIds || trackIds.length === 0) return null;
-
-    try {
-        const token = await getAccessToken();
-        if (!token) return null;
-
-        const response = await fetch(
-            `https://api.spotify.com/v1/audio-features?ids=${trackIds.join(',')}`,
-            { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-
-        if (!response.ok) throw new Error('Error en audio features');
-        const data = await response.json();
-        return data.audio_features.filter(feat => feat); // Filtrar nulls
-    } catch (error) {
-        showError(`Error en análisis: ${error.message}`);
-        return null;
-    }
-}
-
-// Crear gráfico de radar
-function createAudioFeaturesChart(audioFeatures) {
-    // Destruir el gráfico anterior si existe
+// Create an alternative chart based on track data we already have
+function createAlternativeChart(tracks) {
+    // Destroy previous chart if exists
     if (window.audioChart) {
         window.audioChart.destroy();
     }
 
-    const features = ['danceability', 'energy', 'speechiness', 'acousticness', 'instrumentalness', 'valence'];
-    const averages = features.map(feature => {
-        const total = audioFeatures.reduce((sum, af) => sum + (af ? af[feature] : 0), 0);
-        return Number((total / audioFeatures.length).toFixed(2)); 
-    });
-
+    // Get popularity scores and other data
+    const trackNames = tracks.map(track => track.name.length > 15 ? track.name.substring(0, 15) + '...' : track.name);
+    const popularityScores = tracks.map(track => track.popularity / 100); // Normalize to 0-1
+    
+    // Create a polar area chart instead of radar
     window.audioChart = new Chart(elements.audioFeaturesChart, {
-        type: 'radar',
+        type: 'polarArea',
         data: {
-            labels: ['Bailabilidad', 'Energía', 'Vocales', 'Acústica', 'Instrumental', 'Positividad'],
+            labels: trackNames,
             datasets: [{
-                label: 'Media de características',
-                data: averages,
-                backgroundColor: 'rgba(29, 185, 84, 0.3)',
+                label: 'Popularidad',
+                data: popularityScores.map(score => score), 
+                backgroundColor: [
+                    'rgba(29, 185, 84, 0.7)',
+                    'rgba(25, 20, 20, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(255, 206, 86, 0.7)'
+                ],
                 borderColor: '#1db954',
-                pointRadius: 4,
-                pointHoverRadius: 6
+                borderWidth: 1
             }]
         },
         options: {
@@ -249,7 +282,6 @@ function createAudioFeaturesChart(audioFeatures) {
             scales: {
                 r: {
                     beginAtZero: true,
-                    max: 1,
                     ticks: { color: '#fff', backdropColor: 'transparent' },
                     grid: { color: 'rgba(255, 255, 255, 0.2)' }
                 }
@@ -257,13 +289,24 @@ function createAudioFeaturesChart(audioFeatures) {
             plugins: {
                 legend: {
                     labels: { color: '#fff' }
+                },
+                title: {
+                    display: true,
+                    color: '#fff',
+                    text: 'Popularidad de canciones'
                 }
             }
         }
     });
+    
+    // Update the section title
+    const audioAnalysisTitle = document.querySelector('.audio-analysis h2');
+    if (audioAnalysisTitle) {
+        audioAnalysisTitle.innerHTML = '<i class="fas fa-chart-pie"></i> Análisis de Popularidad';
+    }
 }
 
-// Cambiar color de fondo
+// Change background color
 function changeBackgroundColor(imageUrl) {
     if (!imageUrl) return;
 
@@ -279,16 +322,16 @@ function changeBackgroundColor(imageUrl) {
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
 
-            // Prevenir errores de CORS
+            // Prevent CORS errors
             try {
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const color = getDominantColor(imageData);
 
-                // Asegurar que el color no sea demasiado oscuro para legibilidad
+                // Ensure color is not too dark for readability
                 let [r, g, b] = color;
                 const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
 
-                // Si es muy oscuro, mezclarlo con un color base
+                // If too dark, mix with a base color
                 if (luminance < 40) {
                     r = Math.floor((r+50) * 0.7);
                     g = Math.floor((g + 50) * 0.7);
@@ -302,25 +345,25 @@ function changeBackgroundColor(imageUrl) {
                     easing: 'easeInOutQuad'
                 });
             } catch (e) {
-                // Fallback si hay error de CORS
-                console.error("Error de CORS al acceder a los datos de imagen:", e);
+                // Fallback for CORS error
+                console.error("CORS error accessing image data:", e);
             }
         } catch (error) {
-            console.error("Error al procesar imagen:", error);
+            console.error("Error processing image:", error);
         }
     };
     
     img.onerror = () => {
-        console.error("Error al cargar la imagen para el color de fondo");
+        console.error("Error loading image for background color");
     };
 }
 
-// Función para obtener color dominante
+// Function to get dominant color
 function getDominantColor(imageData) {
     const data = imageData.data;
     const colorMap = {};
 
-    // Muestrear un subconjunto de píxeles para mejor rendimiento
+    // Sample a subset of pixels for better performance
     const sampleRate = 10;
 
     for (let i = 0; i < data.length; i += (4 * sampleRate)) {
@@ -328,7 +371,7 @@ function getDominantColor(imageData) {
         const g = data[i+1];
         const b = data[i+2];
 
-        // Agrupar colores similares (reducir precisión)
+        // Group similar colors (reduce precision)
         const key = `${Math.floor(r/10)},${Math.floor(g/10)},${Math.floor(b/10)}`;
 
         if (!colorMap[key]) {
@@ -346,7 +389,7 @@ function getDominantColor(imageData) {
         colorMap[key].b += b;
     }
 
-    // Encontrar el grupo más común
+    // Find most common group
     let maxCount = 0;
     let dominant = null;
 
@@ -357,12 +400,12 @@ function getDominantColor(imageData) {
         }
     }
 
-    // Devolver el color promedio del grupo dominante
+    // Return average color of dominant group
     return dominant ? [ 
         Math.floor(dominant.r / dominant.count),
         Math.floor(dominant.g / dominant.count), 
         Math.floor(dominant.b / dominant.count)
-    ] : [30, 50, 100]; // Color por defecto
+    ] : [30, 50, 100]; // Default color
 }
 
 // Helpers
@@ -374,7 +417,7 @@ function msToMinutes(ms) {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    // Agregar event listener para el botón de búsqueda
+    // Add event listener for search button
     elements.searchButton.addEventListener('click', () => {
         const artistName = elements.searchInput.value.trim();
         if (artistName) {
@@ -384,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Agregar event listener para buscar al presionar Enter
+    // Add event listener to search on Enter key press
     elements.searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             const artistName = elements.searchInput.value.trim();
@@ -396,6 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Inicializar con un artista por defecto
+    // Initialize with default artist
     getArtistInfo('7jy3rLJdDQY21OgRLCZ9sD'); // Foo Fighters
 });
